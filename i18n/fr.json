@@ -46,6 +46,10 @@
     "noBattery": "Aucune batterie n'est configurée.",
     "usageTab": "Utilisation batterie"
   },
+  "colors": {
+    "auto": "Auto",
+    "hex": "Couleur héxa"
+  },
   "config": {
     "aux": {
       "description": "Dispositif ajustant sa consommation en fonction du surplus disponible (comme les chauffe-eau intelligents). evcc s'attend à ce que ce dispositif réduise sa consommation d'énergie si nécessaire.",
@@ -1167,10 +1171,10 @@
       "battery": "Batterie",
       "batteryCharge": "Batterie en charge",
       "batteryDischarge": "Décharge de la batterie",
-      "batteryForecastEmpty": "Vide depuis {time}",
-      "batteryForecastFull": "Plein depuis {time}",
-      "batteryForecastNextHigh": "Prochain pic",
-      "batteryForecastNextLow": "Prochain creux",
+      "batteryForecastEmpty": "Vide",
+      "batteryForecastFull": "Plein",
+      "batteryForecastNextHigh": "Pic",
+      "batteryForecastNextLow": "Creux",
       "batteryGridChargeActive": "Charge réseau : active",
       "batteryGridChargeLimit": "Charge réseau : quand",
       "batteryHold": "Batterie (verrouillée)",
