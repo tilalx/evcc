@@ -107,17 +107,21 @@ type Site struct {
 	tariffSlot time.Time                     // last persisted tariff slot
 
 	// cached state
-	gridPower                float64                     // Grid power
-	pvPower                  float64                     // PV power
-	excessDCPower            float64                     // PV excess DC charge power (hybrid only)
-	auxPower                 float64                     // Aux power
-	battery                  types.BatteryState          // Battery cached and published state
-	batteryMaxDischargePower *float64                    // Max discharge power of all battery meters
-	batteryMode              api.BatteryMode             // Battery mode (runtime only, not persisted)
-	batteryModeExternal      api.BatteryMode             // Battery mode (external, runtime only, not persisted)
-	batteryModeExternalTimer time.Time                   // Battery mode timer for external control
-	suggestions              map[string]types.Suggestion // Optimizer suggestions by device key
-	suggestionActions        map[string]string           // last notified actionable optimizer action by device key
+	gridPower                float64            // Grid power
+	pvPower                  float64            // PV power
+	excessDCPower            float64            // PV excess DC charge power (hybrid only)
+	auxPower                 float64            // Aux power
+	battery                  types.BatteryState // Battery cached and published state
+	batteryMaxDischargePower *float64           // Max discharge power of all battery meters
+	batteryMode              api.BatteryMode    // Battery mode (runtime only, not persisted)
+	batteryModeExternal      api.BatteryMode    // Battery mode (external, runtime only, not persisted)
+	batteryModeExternalTimer time.Time          // Battery mode timer for external control
+
+	batteryChargePowerLimit              *float64                    // Battery charge power limit (last applied, runtime only, not persisted)
+	batteryChargePowerLimitExternal      *float64                    // Battery charge power limit (external, runtime only, not persisted)
+	batteryChargePowerLimitExternalTimer time.Time                   // Battery charge power limit timer for external control
+	suggestions                          map[string]types.Suggestion // Optimizer suggestions by device key
+	suggestionActions                    map[string]string           // last notified actionable optimizer action by device key
 
 	optimizerMu      sync.Mutex // guards optimizer runs
 	optimizerUpdated time.Time  // last optimizer run, guarded by optimizerMu
@@ -342,6 +346,15 @@ func (site *Site) Boot(log *util.Logger, loadpoints []*Loadpoint, tariffs *tarif
 		if mode := site.GetBatteryMode(); batteryModeModified(mode) {
 			if err := site.applyBatteryMode(api.BatteryNormal); err != nil {
 				site.log.ERROR.Println("battery mode:", err)
+			}
+		}
+	})
+
+	// release battery charge power limit on shutdown
+	shutdown.Register(func() {
+		if site.GetBatteryChargePowerLimit() != nil {
+			if err := site.applyBatteryChargePowerLimit(nil); err != nil {
+				site.log.ERROR.Println("battery charge power limit:", err)
 			}
 		}
 	})
@@ -1269,6 +1282,7 @@ func (site *Site) update(lp updater) {
 	batteryGridChargeActive := site.batteryGridChargeActive(rate)
 	site.publish(keys.BatteryGridChargeActive, batteryGridChargeActive)
 	site.updateBatteryMode(batteryGridChargeActive, rate)
+	site.updateBatteryChargePowerLimit()
 
 	// re-evaluate against the updated loadpoint state
 	site.publishSuggestions()
